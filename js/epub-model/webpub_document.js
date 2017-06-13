@@ -1,14 +1,14 @@
 //  Copyright (c) 2014 Readium Foundation and/or its licensees. All rights reserved.
-//  
-//  Redistribution and use in source and binary forms, with or without modification, 
+//
+//  Redistribution and use in source and binary forms, with or without modification,
 //  are permitted provided that the following conditions are met:
-//  1. Redistributions of source code must retain the above copyright notice, this 
+//  1. Redistributions of source code must retain the above copyright notice, this
 //  list of conditions and the following disclaimer.
-//  2. Redistributions in binary form must reproduce the above copyright notice, 
-//  this list of conditions and the following disclaimer in the documentation and/or 
+//  2. Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation and/or
 //  other materials provided with the distribution.
-//  3. Neither the name of the organization nor the names of its contributors may be 
-//  used to endorse or promote products derived from this software without specific 
+//  3. Neither the name of the organization nor the names of its contributors may be
+//  used to endorse or promote products derived from this software without specific
 //  prior written permission.
 
 define(['jquery', 'underscore', 'URIjs'],
@@ -21,6 +21,8 @@ define(['jquery', 'underscore', 'URIjs'],
             var _page_prog_dir;
 
             this.manifest = manifest;
+            this.spine = spine;
+            this.metadata = metadata;
             this.webpubJson = webpubJson;
 
             this.getSharedJsPackageData = function () {
@@ -40,6 +42,7 @@ define(['jquery', 'underscore', 'URIjs'],
                     }
                 };
             };
+
 
             /**
              * Get spine item data in readium-shared-js accepted format.
@@ -129,7 +132,7 @@ define(['jquery', 'underscore', 'URIjs'],
             };
 
             // Used in EpubReader (readium-js-viewer)
-            // we already have "toc" collection in WebPub manifest, so we just stick it into 
+            // we already have "toc" collection in WebPub manifest, so we just stick it into
             // html ordered list, similar to what was done with epub2 NCX
             // - example of toc item
             // {
