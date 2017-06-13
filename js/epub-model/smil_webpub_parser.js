@@ -18,6 +18,9 @@ define(['jquery', 'underscore'], function ($, _) {
         // fill out all the necessary data in webpubDocument.metadata.media_overlay.smil_models
         this.fillSmilData = function (callback) {
 
+            // flag indicating that MO processing failed
+            var processingFailed = false;
+
             //
             // internal helper functions
             //
@@ -160,6 +163,9 @@ define(['jquery', 'underscore'], function ($, _) {
                         return smilModel;
                     }).catch(function (error) {
                         console.log(error);
+
+                        // if we fail to fetch any of the SI MO, we fail the whole thing
+                        processingFailed = true;
                     });
                 } else {
                     // fill in a dummy smil model
@@ -249,10 +255,19 @@ define(['jquery', 'underscore'], function ($, _) {
             if (mo.length > 0) {
                 // map spine items into array of promises fulfilled after all the MO documents
                 // for individual SIs are fetched and parsed
-                var promises = webpubDocument.spine.map(processSpineItemMoTestVersion);
+                // var promises = webpubDocument.spine.map(processSpineItemMoTestVersion);
+                var promises = webpubDocument.spine.map(processSpineItemMo);
 
                 return Promise.all(promises).then(function (smilModels) {
-                    webpubDocument.metadata.media_overlay.smil_models = smilModels;
+                    if (processingFailed) {
+                        webpubDocument.metadata.media_overlay.smil_models = [];
+                    } else {
+                        webpubDocument.metadata.media_overlay.smil_models = smilModels;
+                    }
+                    return Promise.resolve();
+                }).catch(function(error) {
+                    console.log(error);
+                    webpubDocument.metadata.media_overlay.smil_models = [];
                     return Promise.resolve();
                 });
             }

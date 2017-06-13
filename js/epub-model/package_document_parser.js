@@ -37,10 +37,6 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                 function getMetadata(webpubJson) {
                     var metadata = new Metadata();
 
-                    // var metadataElem = findXmlElemByLocalNameAnyNS(webpubJson, "metadata");
-                    // var packageElem = findXmlElemByLocalNameAnyNS(webpubJson, "package");
-                    // var spineElem = findXmlElemByLocalNameAnyNS(webpubJson, "spine");
-
                     // getElemText(metadataElem, "creator");
                     metadata.author = webpubJson.metadata.author[0].name;
 
@@ -57,17 +53,17 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     metadata.id = webpubJson.metadata.identifier;
 
                     // getElemText(metadataElem, "language");
-                    metadata.language = webpubJson.metadata.language;
+                    metadata.language = webpubJson.metadata.language[0];
 
                     // getMetaElemPropertyText(metadataElem, "dcterms:modified");
                     metadata.modified_date = webpubJson.metadata.modified;
 
+                    // getElemText(metadataElem, "date");
+                    metadata.pubdate = webpubJson.metadata.published;
+
                     // R2: this is abstracted in R2, for now leave out
                     // spineElem.getAttribute("toc") ? spineElem.getAttribute("toc") : "";
                     metadata.ncx = '';
-
-                    // getElemText(metadataElem, "date");
-                    metadata.pubdate = webpubJson.metadata.date;
 
                     // getElemText(metadataElem, "publisher");
                     metadata.publisher = webpubJson.metadata.publisher[0].name;
@@ -79,7 +75,8 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     // getMetaElemPropertyText(metadataElem, "rendition:orientation");
                     metadata.rendition_orientation = '';
                     // getMetaElemPropertyText(metadataElem, "rendition:layout");
-                    metadata.rendition_layout = '';
+                    metadata.rendition_layout = webpubJson.metadata.rendition.layout;
+
                     // getMetaElemPropertyText(metadataElem, "rendition:spread");
                     metadata.rendition_spread = '';
                     // getMetaElemPropertyText(metadataElem, "rendition:flow");
@@ -161,6 +158,9 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     // };
 
                     // R2: filling with default values for now
+                    // todo: total duration is not present in MO data, only durations of indiv SI
+                    // in package.opf it is in <meta property="media:duration">08:20:50.45</meta>
+                    // not sure that this is essential
                     metadata.media_overlay = {
                         duration: 0,
                         narrator: '',
