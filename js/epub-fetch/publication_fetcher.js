@@ -265,7 +265,6 @@ define(['jquery', 'URIjs', './markup_parser', './plain_resource_fetcher', './zip
         // (starting with "/", already relative to the EPUB archive's base folder)
         // then the returned value is relativeToPackagePath.
         this.convertPathRelativeToPackageToRelativeToBase = function (relativeToPackagePath) {
-
             return new URI(relativeToPackagePath).absoluteTo(_packageFullPath).toString();
         };
 

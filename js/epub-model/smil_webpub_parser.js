@@ -13,7 +13,7 @@
 
 define(['jquery', 'underscore'], function ($, _) {
     // `SmilWebpubParser` is used to parse R2 MO data into R1 compatible smil models
-    var SmilWebpubParser = function (webpubDocument) {
+    var SmilWebpubParser = function (webpubDocument, packageFetcher) {
 
         // fill out all the necessary data in webpubDocument.metadata.media_overlay.smil_models
         this.fillSmilData = function (callback) {
@@ -150,26 +150,39 @@ define(['jquery', 'underscore'], function ($, _) {
                 // if there is associated MO
                 if (spineItem.properties && spineItem.properties['media-overlay']) {
 
-                    // fetch MO Spine Item data
-                    var href = spineItem.properties['media-overlay'];
-                    return fetch(href, {mode: 'cors'}).then(function (response) {
+                    return new Promise(function(resolve, reject) {
 
-                        // convert response to json object
-                        var spineItemMoJson = response.json();
-                        console.log("Spine Item MO data fetched: ", spineItemMoJson);
+                        // fetch MO Spine Item data
+                        var href = spineItem.properties['media-overlay'];
 
-                        // convert R2 MO Spine Item into smil model expected by R1
-                        var smilModel = parseSpineItemMo(spineItem, spineItemMoJson);
-                        return smilModel;
-                    }).catch(function (error) {
-                        console.log(error);
+                        var url = packageFetcher.getEbookURL() + "/../" + href;
+                        packageFetcher.getFileContentsFromPackage(url, function (txt) {
+                            
+                                // convert response to json object
+                                // var spineItemMoJson = response.json();
+                                var spineItemMoJson = JSON.parse(txt);
+                                console.log("Spine Item MO data fetched: ", spineItemMoJson);
 
-                        // if we fail to fetch any of the SI MO, we fail the whole thing
-                        processingFailed = true;
+                                // convert R2 MO Spine Item into smil model expected by R1
+                                var smilModel = parseSpineItemMo(spineItem, spineItemMoJson);
+                                // return smilModel;
+                                resolve(smilModel);
+                                // callback();
+                        }, function (error) {
+                                console.log(error);
+
+                                // if we fail to fetch any of the SI MO, we fail the whole thing
+                                processingFailed = true;
+                                reject(error);
+                        });
                     });
+
+                    // return fetch(href, {mode: 'cors'}).then(function (response) {
+                    // }).catch(function (error) {
+                    // });
                 } else {
                     // fill in a dummy smil model
-                    return makeFakeSmilJson(spineItem);
+                    return Promise.resolve(makeFakeSmilJson(spineItem));
                 }
             }
 
@@ -178,14 +191,13 @@ define(['jquery', 'underscore'], function ($, _) {
             // - fetch Spine Item MO document
             // - convert it to compatible with R1 smil model data
             function processSpineItemMoTestVersion(spineItem) {
-                return new Promise(function(resolve, reject) {
-                    // parse test string
-                    var spineItemMoJson = JSON.parse(testSpineItemMoString);
+            
+                // parse test string
+                var spineItemMoJson = JSON.parse(testSpineItemMoString);
 
-                    // convert R2 MO Spine Item into smil model expected by R1
-                    var smilModel = parseSpineItemMo(spineItem, spineItemMoJson);
-                    resolve(smilModel);
-                });
+                // convert R2 MO Spine Item into smil model expected by R1
+                var smilModel = parseSpineItemMo(spineItem, spineItemMoJson);
+                return Promise.resolve(smilModel);
             }
 
             var testSpineItemMoString = `{

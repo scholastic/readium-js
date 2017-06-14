@@ -327,7 +327,7 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     var webpubDocument = convertWebPubManifestToPackageDoc(webpubJson);
 
                     // process Media Overlay data of Readium2 WebPub
-                    smilParser = new SmilWebpubParser(webpubDocument);
+                    smilParser = new SmilWebpubParser(webpubDocument, _packageFetcher);
                     smilParser.fillSmilData().then(function () {
                         callback(webpubDocument);
                     });
