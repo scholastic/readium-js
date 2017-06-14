@@ -12,9 +12,9 @@
 //  prior written permission.
 
 define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './package_document',
-        './webpub_document', './smil_document_parser', './metadata', './manifest'],
+        './webpub_document', './smil_document_parser', './metadata', './manifest', './smil_webpub_parser'],
     function ($, _, MarkupParser, URI, PackageDocument, WebpubDocument, SmilDocumentParser,
-              Metadata, Manifest) {
+              Metadata, Manifest, SmilWebpubParser) {
 
 
         // `PackageDocumentParser` is used to parse the xml of an epub package
@@ -32,7 +32,155 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                 //
                 // Helper functions
                 //
-                
+
+                // fills in metadata based on web pub manifest
+                function getMetadata(webpubJson) {
+                    var metadata = new Metadata();
+
+                    // getElemText(metadataElem, "creator");
+                    metadata.author = webpubJson.metadata.author[0].name;
+
+                    // getElemText(metadataElem, "title");
+                    metadata.title = webpubJson.metadata.title;
+
+                    // getElemText(metadataElem, "description");
+                    metadata.description = webpubJson.metadata.description;
+
+                    // packageElem.getAttribute("version") ? packageElem.getAttribute("version") : "";
+                    metadata.epub_version = '';
+
+                    // getElemText(metadataElem, "identifier");
+                    metadata.id = webpubJson.metadata.identifier;
+
+                    // getElemText(metadataElem, "language");
+                    metadata.language = webpubJson.metadata.language[0];
+
+                    // getMetaElemPropertyText(metadataElem, "dcterms:modified");
+                    metadata.modified_date = webpubJson.metadata.modified;
+
+                    // getElemText(metadataElem, "date");
+                    metadata.pubdate = webpubJson.metadata.published;
+
+                    // R2: this is abstracted in R2, for now leave out
+                    // spineElem.getAttribute("toc") ? spineElem.getAttribute("toc") : "";
+                    metadata.ncx = '';
+
+                    // getElemText(metadataElem, "publisher");
+                    metadata.publisher = webpubJson.metadata.publisher[0].name;
+
+                    // getElemText(metadataElem, "rights");
+                    metadata.rights = webpubJson.metadata.rights;
+
+                    // R2: empty string for all of the following
+                    // getMetaElemPropertyText(metadataElem, "rendition:orientation");
+                    metadata.rendition_orientation = '';
+                    // getMetaElemPropertyText(metadataElem, "rendition:layout");
+                    metadata.rendition_layout = webpubJson.metadata.rendition.layout;
+
+                    // getMetaElemPropertyText(metadataElem, "rendition:spread");
+                    metadata.rendition_spread = '';
+                    // getMetaElemPropertyText(metadataElem, "rendition:flow");
+                    metadata.rendition_flow = '';
+
+                    //http://www.idpf.org/epub/301/spec/epub-publications.html#fxl-property-viewport
+
+                    // R2: skipping for now setting of metadata.rendition_viewport and metadata.rendition_viewports
+                    metadata.rendition_viewport = '';
+                    metadata.rendition_viewports = [];
+
+                    // //metadata.rendition_viewport = getMetaElemPropertyText(metadataElem, "rendition:viewport");
+                    // metadata.rendition_viewport = getElemText(metadataElem, "meta", function (element) {
+                    //     return element.getAttribute("property") === "rendition:viewport" && !element.hasAttribute("refines")
+                    // });
+                    //
+                    // var viewports = [];
+                    // var viewportMetaElems = filterXmlElemsByLocalNameAnyNS(metadataElem, "meta", function (element) {
+                    //     return element.getAttribute("property") === "rendition:viewport" && element.hasAttribute("refines");
+                    // });
+                    // _.each(viewportMetaElems, function (currItem) {
+                    //     var id = currItem.getAttribute("refines");
+                    //     if (id) {
+                    //         var hash = id.indexOf('#');
+                    //         if (hash >= 0) {
+                    //             var start = hash + 1;
+                    //             var end = id.length - 1;
+                    //             id = id.substr(start, end);
+                    //         }
+                    //         id = id.trim();
+                    //     }
+                    //
+                    //     var vp = {
+                    //         refines: id,
+                    //         viewport: currItem.textContent
+                    //     };
+                    //     viewports.push(vp);
+                    // });
+                    //
+                    // metadata.rendition_viewports = viewports;
+
+
+                    // R2: skipping for now setting of metadata.mediaItems
+                    metadata.mediaItems = [];
+
+                    // // Media part
+                    // metadata.mediaItems = [];
+                    //
+                    // var overlayElems = filterXmlElemsByLocalNameAnyNS(metadataElem, "meta", function (element) {
+                    //     return element.getAttribute("property") === "media:duration" && element.hasAttribute("refines");
+                    // });
+                    //
+                    // _.each(overlayElems, function (currItem) {
+                    //     metadata.mediaItems.push({
+                    //         refines: currItem.getAttribute("refines"),
+                    //         duration: SmilDocumentParser.resolveClockValue(currItem.textContent)
+                    //     });
+                    // });
+                    //
+                    // metadata.media_overlay = {
+                    //     duration: SmilDocumentParser.resolveClockValue(
+                    //         getElemText(metadataElem, "meta", function (element) {
+                    //             return element.getAttribute("property") === "media:duration" && !element.hasAttribute("refines")
+                    //         })
+                    //     ),
+                    //     narrator: getMetaElemPropertyText(metadataElem, "media:narrator"),
+                    //     activeClass: getMetaElemPropertyText(metadataElem, "media:active-class"),
+                    //     playbackActiveClass: getMetaElemPropertyText(metadataElem, "media:playback-active-class"),
+                    //     smil_models: [],
+                    //     skippables: ["sidebar", "practice", "marginalia", "annotation", "help", "note", "footnote", "rearnote",
+                    //         "table", "table-row", "table-cell", "list", "list-item", "pagebreak"],
+                    //     escapables: ["sidebar", "bibliography", "toc", "loi", "appendix", "landmarks", "lot", "index",
+                    //         "colophon", "epigraph", "conclusion", "afterword", "warning", "epilogue", "foreword",
+                    //         "introduction", "prologue", "preface", "preamble", "notice", "errata", "copyright-page",
+                    //         "acknowledgments", "other-credits", "titlepage", "imprimatur", "contributors", "halftitlepage",
+                    //         "dedication", "help", "annotation", "marginalia", "practice", "note", "footnote", "rearnote",
+                    //         "footnotes", "rearnotes", "bridgehead", "page-list", "table", "table-row", "table-cell", "list",
+                    //         "list-item", "glossary"]
+                    // };
+
+                    // R2: filling with default values for now
+                    // todo: total duration is not present in MO data, only durations of indiv SI
+                    // in package.opf it is in <meta property="media:duration">08:20:50.45</meta>
+                    // not sure that this is essential
+                    metadata.media_overlay = {
+                        duration: 0,
+                        narrator: '',
+                        activeClass: '',
+                        playbackActiveClass: '',
+                        smil_models: [],
+                        skippables: ["sidebar", "practice", "marginalia", "annotation", "help", "note", "footnote", "rearnote",
+                            "table", "table-row", "table-cell", "list", "list-item", "pagebreak"],
+                        escapables: ["sidebar", "bibliography", "toc", "loi", "appendix", "landmarks", "lot", "index",
+                            "colophon", "epigraph", "conclusion", "afterword", "warning", "epilogue", "foreword",
+                            "introduction", "prologue", "preface", "preamble", "notice", "errata", "copyright-page",
+                            "acknowledgments", "other-credits", "titlepage", "imprimatur", "contributors", "halftitlepage",
+                            "dedication", "help", "annotation", "marginalia", "practice", "note", "footnote", "rearnote",
+                            "footnotes", "rearnotes", "bridgehead", "page-list", "table", "table-row", "table-cell", "list",
+                            "list-item", "glossary"]
+                    };
+
+                    return metadata;
+                }
+
                 // recreates Package Document's spine based on "spine" section of webpub
                 // Note, that it must be called after manifest items are processed and hrefToIdMap is filled
                 function getJsonSpine(webpubJson, manifest, metadata) {
@@ -53,12 +201,17 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                             // assuming that the order of spine items in webpub indicates that they are linear
                             linear: 'yes',
 
-                            // R2: these data is lost 
+                            // R2: for now we need it to access media-overlay href for the spine
+                            properties: webpubItem.properties,
+
+                            // R2: MO duration for the SI
+                            duration: webpubItem.duration,
+
+                            // R2: these data is lost
                             rendition_viewport: viewport,
                             idref: hrefToIdMap[webpubItem.href],
                             manifest_id: '',
-                            media_overlay_id: '',
-                            properties: ''
+                            media_overlay_id: ''
                         };
 
                         // var parsedProperties = parsePropertiesString(spineItem.properties);
@@ -77,7 +230,7 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                 //     "type": "application/xhtml+xml"
                 // }
                 function convertToPackageDocManifestItem(webpubItem) {
-                    
+
                     // figure item's id
                     // consult / maintain (href -> item id) map
                     var id;
@@ -91,7 +244,7 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     var manifestItem = {
                         href: webpubItem.href,
                         media_type: webpubItem.type,
-                        // R2: these data is lost 
+                        // R2: these data is lost
                         id: hrefToIdMap[webpubItem.href],
                         media_overlay_id: '',
                         properties: ''
@@ -107,9 +260,9 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                 }
 
                 // Recreate PackageDocument manifest from WebPub manifest
-                // we want to include items defined in WebPub's spine and resources. 
+                // we want to include items defined in WebPub's spine and resources.
                 // Note, that "id" attribute of PackageDocument is not present in WebPub manifest,
-                // so we are trying to recreate it, assuming that "href" is a unique identifier of a resource 
+                // so we are trying to recreate it, assuming that "href" is a unique identifier of a resource
                 function getJsonManifest(webpubJson) {
                     // start with spine, continue with resources
                     var spine = webpubJson.spine.map(convertToPackageDocManifestItem);
@@ -120,11 +273,9 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                 //
                 // Body of the function
                 //
-                
-                // form metadata part of PackageDocument
-                // todo: this is from initial attempt, see if this makes sense
-                // var metadata = getMetadata(webpubJson);
-                var metadata = {};
+
+                // form metadata section of PackageDocument
+                var metadata = getMetadata(webpubJson);
 
                 // figure metadata.rendition_layout
                 metadata.rendition_layout = "reflowable";
@@ -142,12 +293,12 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     }
                 }
 
-                // form manifest part of PackageDocument
+                // form manifest section of PackageDocument
                 var manifest = new Manifest(getJsonManifest(webpubJson));
 
-                // form spine part of PackageDocument
+                // form spine section of PackageDocument
                 var spine = getJsonSpine(webpubJson, manifest, metadata);
-                
+
                 var webpubDocument = new WebpubDocument(_packageFetcher.getEbookURL(),
                     _packageFetcher, metadata, spine, manifest, webpubJson);
 
@@ -155,25 +306,31 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     webpubJson.metadata.direction === "default" ? "ltr" : webpubJson.metadata.direction);
                 return webpubDocument;
             };
-            
+
         var _packageFetcher = publicationFetcher;
     if (_packageFetcher.contentType() && _packageFetcher.contentType().indexOf('application/webpub+json') === 0) {
 
+        // redefine parse function for R2 WebPub
         this.parse = function(callback) {
 
             console.log(_packageFetcher.getEbookURL());
             console.log(_packageFetcher.contentType());
-            
+
             _packageFetcher.getFileContentsFromPackage(
                 _packageFetcher.getEbookURL(),
                 function (fileContents) {
                     // console.log(fileContents);
-                    
+
                     var webpubJson = JSON.parse(fileContents);
                     // console.log(webpubJson);
 
-                    var zPackageDocument = convertWebPubManifestToPackageDoc(webpubJson);
-                    callback(zPackageDocument);
+                    var webpubDocument = convertWebPubManifestToPackageDoc(webpubJson);
+
+                    // process Media Overlay data of Readium2 WebPub
+                    smilParser = new SmilWebpubParser(webpubDocument);
+                    smilParser.fillSmilData().then(function () {
+                        callback(webpubDocument);
+                    });
                 }, function (err) {
                     callback(undefined);
                 });
@@ -209,7 +366,7 @@ define(['jquery', 'underscore', '../epub-fetch/markup_parser', 'URIjs', './packa
                     callback(undefined);
                     return;
                 }
-                
+
                 var metadata = getMetadata(xmlDom);
 
                 var spineElem = xmlDom.getElementsByTagNameNS("*", "spine")[0];
